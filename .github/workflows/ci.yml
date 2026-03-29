@@ -1,0 +1,62 @@
+name: Vanguard Monorepo CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  backend-ci:
+    name: Build & Test .NET Core
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: vanguard-api
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore Vanguard.Api.sln
+      
+    - name: Build API
+      run: dotnet build Vanguard.Api.sln --no-restore --configuration Release
+      
+    - name: Run Tests
+      run: dotnet test Vanguard.Api.sln --no-build --verbosity normal --configuration Release
+
+  frontend-ci:
+    name: Build Next.js React 16
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: vanguard-web
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v3
+      with:
+        version: 10
+        
+    - name: Install dependencies
+      run: pnpm install
+      
+    - name: Build Next.js Application
+      run: pnpm build

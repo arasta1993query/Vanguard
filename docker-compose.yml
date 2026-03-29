@@ -1,0 +1,44 @@
+name: Vanguard
+services:
+  database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Asd@12369874"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Asd@12369874' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build: 
+      context: ./vanguard-api
+      dockerfile: Dockerfile
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      # Use dynamic internal DNS 'database' to route connections cleanly between containers
+      - ConnectionStrings__DefaultConnection=Server=database,1433;Database=VanguardDb;User Id=sa;Password=Asd@12369874;TrustServerCertificate=True;MultipleActiveResultSets=true;
+    depends_on:
+      database:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./vanguard-web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5001/api
+    depends_on:
+      - api
+
+volumes:
+  mssqldata:
